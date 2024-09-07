@@ -17,7 +17,7 @@ static int swallowfloating    = 0;        // 1 means swallow floating windows by
 static int smartgaps          = 0;        // 1 means no outer gap when there is only one window
 static int showbar            = 1;        // 0 means no bar
 static int topbar             = 1;        // 0 means bottom bar
-static char *fonts[]          = { "Hack:weight=bold:size=9", "JoyPixels:pixelsize=9:antialias=true:autohint=true"  };
+static char *fonts[]          = { "monospace:weight=bold:size=9", "NotoColorEmoji:pixelsize=10:antialias=true:autohint=true"  };
 static char normbgcolor[]           = "#222222";
 static char normbordercolor[]       = "#444444";
 static char normfgcolor[]           = "#bbbbbb";
@@ -70,11 +70,24 @@ static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen win
 static const Layout layouts[] = {
 	/* symbol     arrange function */
 	{ "[]=",	tile },			/* Default: Master on left, slaves on right */
-	{ "><>",	NULL },			/* no layout function means floating behavior */
+	{ "TTT",	bstack },               /* Master on top, slaves on bottom */
+
+	{ "[@]",	spiral },               /* Fibonacci spiral */
+	{ "[\\]",	dwindle },              /* Decreasing in size right and leftward */
+
+	{ "[D]",	deck },	                /* Master on left, slaves in monocle-like mode on right */
+	{ "[M]",	monocle },              /* All windows on top of eachother */
+
+	{ "|M|",	centeredmaster },		/* Master in middle, slaves on sides */
+	{ ">M>",	centeredfloatingmaster },	/* Same but master floats */
+
+	{ "><>",	NULL },	                /* no layout function means floating behavior */
+	{ NULL,		NULL },
 };
 
 /* key definitions */
 #define MODKEY Mod4Mask
+#define ALTKEY Mod1Mask
 #define TAGKEYS(KEY,TAG) \
 	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
 	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
@@ -153,6 +166,14 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_r,  	   	togglefloating, {0} },
 	//{ MODKEY|ShiftMask,		XK_r,		togglefloating,	{0} },
 	{ MODKEY,			XK_t,		setlayout,	{.v = &layouts[0]} }, /* tile */
+	{ MODKEY|ShiftMask,		XK_t,		setlayout,	{.v = &layouts[1]} }, /* bstack */
+	{ MODKEY,			XK_c,		setlayout,	{.v = &layouts[6]} }, /* centeredmaster */
+	{ MODKEY|ShiftMask,		XK_c,		setlayout,	{.v = &layouts[7]} }, /* centeredfloatingmaster */
+	{ MODKEY,			XK_m,		setlayout,	{.v = &layouts[5]} }, /* monocle */
+	{ MODKEY|ShiftMask,		XK_m,		setlayout,	{.v = &layouts[4]} }, /* deck */
+	{ MODKEY,			XK_u,		setlayout,	{.v = &layouts[2]} }, /* spiral */
+	{ MODKEY|ShiftMask,		XK_u,		setlayout,	{.v = &layouts[3]} }, /* dwindle */
+
 	//{ MODKEY|ShiftMask,		XK_backslash,	spawn,		SHCMD("") },
 	{ MODKEY,			XK_a,		togglegaps,	{0} },
 	{ MODKEY|ShiftMask,		XK_a,		defaultgaps,	{0} },
@@ -184,21 +205,40 @@ static const Key keys[] = {
 	{ MODKEY,			XK_n,		spawn,		{.v = (const char*[]){ TERMINAL, "-e", "nvim", NULL } } },
 	{ MODKEY|ShiftMask,		XK_n,		spawn,		SHCMD(TERMINAL " -e newsboat ") },
 	{ MODKEY,			XK_o,		spawn,		SHCMD("xdotool type $(grep -v '^#' ~/.local/share/snippets | dmenu -i -l 50 | cut -d' ' -f1)") },
+	{ MODKEY,			XK_e,		spawn,		SHCMD("xdotool type $(grep -v '^#' ~/.local/share/chars/emoji | dmenu -i -l 20 | cut -d' ' -f1)") },
+	{ MODKEY|ShiftMask,		XK_e,		spawn,		SHCMD("xdotool type $(grep -v '^#' ~/.local/share/chars/font-awesome | dmenu -i -l 20 | cut -d' ' -f1)") },
 	{ MODKEY|ShiftMask,		XK_o,		spawn,		SHCMD("xdotool type $(grep -v '^#' ~/.local/share/lab | dmenu -i -l 50 | cut -d' ' -f1)") },
 	{ MODKEY|ShiftMask,		XK_i,		spawn,		SHCMD("xdotool type $(grep -v '^#' ~/.local/share/hub | dmenu -i -l 50 | cut -d' ' -f1)") },
+
+	{ MODKEY|ShiftMask,		XK_s,		spawn,		SHCMD("pkill -USR1 -x sxhkd") },
+	{ MODKEY|ShiftMask,		XK_f,		spawn,		SHCMD("~/.local/bin/scrot.sh")},
+	{ MODKEY|ShiftMask,		XK_x,		spawn,		SHCMD("~/.local/bin/setxkbmap.sh")},
+	{ ALTKEY|ControlMask,		XK_Return,	spawn,		{.v = termcmd } },
+	{ ALTKEY|ControlMask,		XK_p,		spawn,		SHCMD("~/.local/bin/xcompmgr-toggle.sh")},
+	{ ALTKEY|ControlMask,		XK_o,		spawn,		SHCMD("~/.local/bin/xset.sh")},
+	{ ALTKEY|ShiftMask,		XK_l,		spawn,		SHCMD("slock")},
+	{ ALTKEY,			XK_p,		spawn,		SHCMD("brightnessctl set 5%+") },
+	{ ALTKEY, 			XK_l,		spawn,		SHCMD("brightnessctl set 5%-") },
+	{ 0,				XK_F12,		spawn,		SHCMD("amixer -q sset Speaker 5%+") },
+	{ 0,				XK_F11,		spawn,		SHCMD("amixer -q sset Speaker 5%-") },
+	{ 0,				XK_F10,		spawn,		SHCMD("amixer -q sset Speaker toggle") },
+	{ ShiftMask,				XK_F12,		spawn,		SHCMD("amixer -q sset Headphone 5%+") },
+	{ ShiftMask,				XK_F11,		spawn,		SHCMD("amixer -q sset Headphone 5%-") },
+	{ ShiftMask,				XK_F10,		spawn,		SHCMD("amixer -q sset Headphone toggle") },
+	{ ALTKEY|ShiftMask,		XK_r,		spawn,		{.v = (const char*[]){ TERMINAL, "-e", "sudo", "reboot", "-i",  NULL } } },
+	{ ALTKEY|ShiftMask,		XK_d,		spawn,		{.v = (const char*[]){ TERMINAL, "-e", "sudo", "poweroff", "-i",  NULL } } },
 
 	{ MODKEY,			XK_Left,	focusmon,	{.i = -1 } },
 	{ MODKEY|ShiftMask,		XK_Left,	tagmon,		{.i = -1 } },
 	{ MODKEY,			XK_Right,	focusmon,	{.i = +1 } },
 	{ MODKEY|ShiftMask,		XK_Right,	tagmon,		{.i = +1 } },
-
 	{ MODKEY,			XK_F5,		xrdb,		{.v = NULL } },
 
 	{ 0, XF86XK_MonBrightnessUp,	spawn,		SHCMD("brightnessctl set 5%+") },
 	{ 0, XF86XK_MonBrightnessDown,	spawn,		SHCMD("brightnessctl set 5%-") },
-	{ 0, XF86XK_AudioMute,		spawn,		SHCMD("amixer -q sset Master toggle") },
 	{ 0, XF86XK_AudioRaiseVolume,	spawn,		SHCMD("amixer -q sset Master 5%+") },
 	{ 0, XF86XK_AudioLowerVolume,	spawn,		SHCMD("amixer -q sset Master 5%-") },
+	{ 0, XF86XK_AudioMute,		spawn,		SHCMD("amixer -q sset Master toggle") },
 
 	{ MODKEY,			XK_F11,		spawn,		SHCMD("mpv --untimed --no-cache --no-osc --no-input-default-bindings --profile=low-latency --input-conf=/dev/null --title=webcam $(ls /dev/video[0,2,4,6,8] | tail -n 1)") },
 
