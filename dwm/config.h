@@ -220,9 +220,9 @@ static const Key keys[] = {
 	{ 0,				XK_F12,		spawn,		SHCMD("amixer -q sset Speaker 5%+") },
 	{ 0,				XK_F11,		spawn,		SHCMD("amixer -q sset Speaker 5%-") },
 	{ 0,				XK_F10,		spawn,		SHCMD("amixer -q sset Speaker toggle") },
-	{ ShiftMask,				XK_F12,		spawn,		SHCMD("amixer -q sset Headphone 5%+") },
-	{ ShiftMask,				XK_F11,		spawn,		SHCMD("amixer -q sset Headphone 5%-") },
-	{ ShiftMask,				XK_F10,		spawn,		SHCMD("amixer -q sset Headphone toggle") },
+	{ 0,				XK_F3,		spawn,		SHCMD("amixer -q sset Headphone 5%+") },
+	{ 0,				XK_F2,		spawn,		SHCMD("amixer -q sset Headphone 5%-") },
+	{ 0,				XK_F1,		spawn,		SHCMD("amixer -q sset Headphone toggle") },
 	{ ALTKEY|ShiftMask,		XK_r,		spawn,		{.v = (const char*[]){ TERMINAL, "-e", "sudo", "reboot", "-i",  NULL } } },
 	{ ALTKEY|ShiftMask,		XK_d,		spawn,		{.v = (const char*[]){ TERMINAL, "-e", "sudo", "poweroff", "-i",  NULL } } },
 
